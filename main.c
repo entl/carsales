@@ -16,41 +16,38 @@
 void menu();
 void buyCar();
 void viewSales();
-void writeFile(short numberOfCars, float totalPrice, float discountValue, char customerName[100], short customerAge);
+void writePurchase(short numberOfCars, float totalPrice, float discountValue, char customerName[100], short customerAge);
 
 /*Variables*/
 unsigned short carsAvailable = CARS_MAX, carsNeeded = 0, carsSold = 0;
-char isMember = false;
-bool giveDiscount = false;
-/*keeping values during the purchase and then appends to salesInfo array*/
-float totalPrice, discountValue, discountPercentage;
-/*2d array which tracks sales info such as
-cars bought, totalPrice, discountValue*/
 
-// float salesInfo[CARS_MAX][3];
-
-/*stores customer*/
-char customerNames[CARS_MAX][200];
-short customerAge[CARS_MAX];
 /*tracks sale number*/
+typedef struct {
+    char name[100];
+    unsigned short age;
+    short numberOfCars;
+    float totalPrice;
+    short discountPercentage;
+    float discountValue;
+    bool giveDiscount;
+    bool isMember;
+} Client;
+
 int numberOfSales = 0;
 
 /*Car models*/
 char carModels[][100] = {
-    "Toyota Corolla", "Toyota RAV4", "Honda CR-V", 
-    "Ford F-150", "Honda Civic", "Mercedes C Class", 
-    "Aston Martin Vantage", "Ferrari SF90", "Nissan GTR"
-};
+    "Toyota Corolla", "Toyota RAV4", "Honda CR-V",
+    "Ford F-150", "Honda Civic", "Mercedes C Class",
+    "Aston Martin Vantage", "Ferrari SF90", "Nissan GTR"};
 float carPrices[] = {
     25000.0f, 30000.0f, 32500.0f,
     37800.0f, 24000.0f, 39000.0f,
-    63777.0f, 110000.0f, 100000.0f
-};
+    63777.0f, 110000.0f, 100000.0f};
 short carsStock[] = {
     20, 15, 16,
     13, 19, 10,
-    7, 4, 5
-};
+    7, 4, 5};
 
 void main() {
     while (true)
@@ -58,7 +55,7 @@ void main() {
 }
 
 void menu() {
-    system("cls"); // clears terminal
+    // system("cls"); // clears terminal
     /* Greeting */
     puts("\n\n***Welcome to the Car Sales office!***\n");
     printf("a. Buy cars\n"
@@ -87,6 +84,7 @@ void menu() {
 }
 
 void buyCar() {
+    Client client;
     if (carsAvailable > 0) {
         printf("\nWe have %hd cars available. Each car costs %.2f.\n\n",
                carsAvailable, CAR_PRICE);
@@ -118,54 +116,54 @@ void buyCar() {
         return;
     }
 
-    totalPrice = carsNeeded * CAR_PRICE;
+    client.totalPrice = carsNeeded * CAR_PRICE;
 
     /*get customer name*/
     puts("What is your name? Name: ");
     fflush(stdin);
     /*use %[^\n]s to capture whole name (more than 1 word)*/
-    scanf("%[^\n]s", &customerNames[numberOfSales]);
+    scanf("%[^\n]s", &client.name);
     puts("How old are you? Age: ");
     fflush(stdin);
-    scanf("%hd", &customerAge[numberOfSales]); //needs validation
+    scanf("%hd", &client.age); // needs validation
 
     puts("Are you a member of the Car Club?(y/n)");
     fflush(stdin);
-    isMember = getchar();
+    client.isMember = getchar();
 
     // checks if client have both discounts
-    if (tolower(isMember) == 'y' && (carsNeeded >= DISCOUNT_MULTIBUY_AMOUNT)) {
-        giveDiscount = 1;
+    if (tolower(client.isMember) == 'y' && (carsNeeded >= DISCOUNT_MULTIBUY_AMOUNT)) {
+        client.giveDiscount = 1;
         /*calculate discount value*/
-        discountValue = totalPrice - (totalPrice * (1 - DISCOUNT_MAX));
+        client.discountValue = client.totalPrice - (client.totalPrice * (1 - DISCOUNT_MAX));
         /*update total price*/
-        totalPrice -= discountValue;
-        discountPercentage = DISCOUNT_MAX;
+        client.totalPrice -= client.discountValue;
+        client.discountPercentage = DISCOUNT_MAX;
     }
 
     // otherwise, check member discount
-    else if (tolower(isMember) == 'y') {
-        giveDiscount = 1;
-        discountValue = totalPrice - (totalPrice * (1 - DISCOUNT_MEMBER_PERCENTAGE));
-        totalPrice -= discountValue;
-        discountPercentage = DISCOUNT_MEMBER_PERCENTAGE;
+    else if (tolower(client.isMember) == 'y') {
+        client.giveDiscount = 1;
+        client.discountValue = client.totalPrice - (client.totalPrice * (1 - DISCOUNT_MEMBER_PERCENTAGE));
+        client.totalPrice -= client.discountValue;
+        client.discountPercentage = DISCOUNT_MEMBER_PERCENTAGE;
     }
 
     // otherwise, check multibuy discount
     else if (carsNeeded >= DISCOUNT_MULTIBUY_AMOUNT) {
-        giveDiscount = 1;
-        discountValue = totalPrice - (totalPrice * (1 - DISCOUNT_MULTIBUY_PERCENTAGE));
-        totalPrice -= discountValue;
-        discountPercentage = DISCOUNT_MULTIBUY_PERCENTAGE;
+        client.giveDiscount = 1;
+        client.discountValue = client.totalPrice - (client.totalPrice * (1 - DISCOUNT_MULTIBUY_PERCENTAGE));
+        client.totalPrice -= client.discountValue;
+        client.discountPercentage = DISCOUNT_MULTIBUY_PERCENTAGE;
     }
 
     /* Present discount outcome */
-    switch (giveDiscount) {
+    switch (client.giveDiscount) {
     case true:
         // convert from 0.2 format to 20% format
-        discountPercentage *= 100;
+        client.discountPercentage *= 100;
         // hide decimals, not needed
-        printf("\nDiscount of %.0f%% applied!\n", discountPercentage);
+        printf("\nDiscount of %.0f%% applied!\n", client.discountPercentage);
         break;
     case false:
         printf("\nDiscount not applied.\n");
@@ -175,24 +173,13 @@ void buyCar() {
     /* Present final outcome */
     printf("\nThank you for your custom.\n");
     printf("\nYou have bought %hd cars. Total price to pay is %.2f.",
-           carsNeeded, totalPrice);
+           carsNeeded, client.totalPrice);
 
-    writeFile(carsNeeded, totalPrice, discountValue, customerNames[numberOfSales], customerAge[numberOfSales]);
+    writePurchase(carsNeeded, client.totalPrice, client.discountValue, client.name, client.age);
 
     /*Update stock*/
     carsSold += carsNeeded;
     carsAvailable -= carsNeeded;
-    /*add info to salesInfo array*/
-    // salesInfo[numberOfSales][0] = carsNeeded;
-    // salesInfo[numberOfSales][1] = totalPrice;
-    // salesInfo[numberOfSales][2] = discountValue;
-    numberOfSales++;
-    /*update variables to base values*/
-    carsNeeded = 0;
-    giveDiscount = false;
-    isMember = false;
-    discountPercentage = 0;
-    discountValue = 0;
 
     printf("\nPress any key to continue...\n");
     fflush(stdin);
@@ -203,27 +190,35 @@ void viewSales() {
     system("cls");
     printf("*Sale information*\n\n");
     printf("Cars\tTotal Price\tDiscount Value\tName\nAge\n");
-    // for (int i = 0; i < sizeof(salesInfo) / sizeof(salesInfo)[0]; i++) {
-    //     if (salesInfo[i][0] > 0) {
-    //         for (int u = 0; u < sizeof(salesInfo[0]) / sizeof(salesInfo[0][0]); u++) {
-    //             printf("%-4.2f\t", salesInfo[i][u]);
-    //         }
-    //         printf("%s", customerNames[i]);
-    //         puts("\n");
-    //     }
-    // }
+    /*
+    
+    implement reading from file
+    
+    */
     printf("\nPress any key to continue...\n");
     fflush(stdin);
     getchar();
     return;
 }
 
-void writeFile(short numberOfCars, float totalPrice, float discountValue, char customerName[100], short customerAge){
+void writePurchase(short numberOfCars, float totalPrice, float discountValue, char customerName[100], short customerAge) {
     FILE *fpt;
 
     fpt = fopen("salesData.csv", "w+");
-    fprintf(fpt, "%hd, %f, %f, %f, %s, %hd\n", numberOfCars, totalPrice, discountValue, customerName, customerAge);
+    fprintf(fpt, "%hd, %f, %f, %s, %hd\n", numberOfCars, totalPrice, discountValue, customerName, customerAge);
 }
+
+void writeCarsData(){
+    
+}
+
+
+void readFile() {
+    FILE *fpt;
+
+    fpt = fopen("", "r");
+}
+
 
 // void bubbleSort() {
 //     int arr[] = {2, 3, 1, 7, 5, 2, 9, 0};
