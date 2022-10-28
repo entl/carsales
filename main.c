@@ -11,7 +11,8 @@
 #define DISCOUNT_MEMBER_PERCENTAGE 0.25f
 #define DISCOUNT_MAX 0.35f
 
-typedef struct {
+typedef struct
+{
     char name[100];
     char carModel[100];
     unsigned short age;
@@ -23,55 +24,73 @@ typedef struct {
     char isMember;
 } Client;
 
+typedef struct
+{
+    char carModel[100];
+    float carPrice;
+    unsigned short carsAvailable;
+    unsigned short carsSold;
+} Car;
 
 /*funtions prototypes*/
 void menu();
 void buyCar();
 void viewSales();
+void showModels();
 short chooseModel();
-
-/**
- * @brief writes the information about purchase into the file "salesData.csv"
-    if it is first run of code, creates file "salesData.cvs"
- * 
- * @param carModel
- * @param carsNeeded 
- * @param totalPrice 
- * @param discountValue 
- * @param customerName 
- * @param customerAge 
- */
-void writePurchase(char carModel[100], short carsNeeded, float totalPrice, float discountValue, char customerName[100], short customerAge);
-
 /**
  * @brief Based on cars needed and membership applies a discount
- * 
+ *
  * @param client (pointer to struct)
  */
 void applyDiscount(Client *client);
 
+/**
+ * @brief writes the information about purchase into the file "salesData.csv"
+    if it is first run of code, creates file "salesData.cvs"
+ *
+ * @param carModel
+ * @param carsNeeded
+ * @param totalPrice
+ * @param discountValue
+ * @param customerName
+ * @param customerAge
+ */
+void writePurchase(char carModel[100], short carsNeeded, float totalPrice, float discountValue, char customerName[100], short customerAge);
+void readPurchases();
+void writeCarsSold();
+void readCarsSold();
+void updateCarsAvailable();
 
+/*
+ * Car models
+ * create an array of structs
+ */
+Car cars[9] = {
+    {"Toyota Corolla", 25000.0f, 20, 0},
+    {"Toyota RAV4", 30000.0f, 15, 0},
+    {"Honda CR-V", 32500.0f, 16, 0},
+    {"Ford F-150", 37800.0f, 13, 0},
+    {"Honda Civic", 24000.0f, 19, 0},
+    {"Mercedes C Class", 39000.0f, 10, 0},
+    {"Aston Martin Vantage", 63777.0f, 7, 0},
+    {"Ferrari SF90", 110000.0f, 4, 0},
+    {"Nissan GTR", 100000.0f, 5, 0},
+};
+short carOptions = sizeof(cars) / sizeof(cars[0]);
 
-/*Car models*/
-char carModels[][100] = {
-    "Toyota Corolla", "Toyota RAV4", "Honda CR-V",
-    "Ford F-150", "Honda Civic", "Mercedes C Class",
-    "Aston Martin Vantage", "Ferrari SF90", "Nissan GTR"};
-float carPrices[] = {
-    25000.0f, 30000.0f, 32500.0f,
-    37800.0f, 24000.0f, 39000.0f,
-    63777.0f, 110000.0f, 100000.0f};
-short carsStock[] = {
-    20, 15, 16,
-    13, 19, 10,
-    7, 4, 5};
-
-void main() {
+void main()
+{
+    /*gets from file number of cars that were sold*/
+    readCarsSold();
+    /*update in each class variable "carsAvailable"*/
+    updateCarsAvailable();
     while (true)
         menu();
 }
 
-void menu() {
+void menu()
+{
     // system("cls"); // clears terminal
     /* Greeting */
     puts("\n\n***Welcome to the Car Sales office!***\n");
@@ -83,7 +102,8 @@ void menu() {
     /*clears buffer*/
     fflush(stdin);
     char switchChoice = getchar();
-    switch (tolower(switchChoice)) {
+    switch (tolower(switchChoice))
+    {
     case 'a':
         buyCar();
         break;
@@ -100,10 +120,12 @@ void menu() {
     }
 }
 
-void buyCar() {
+void buyCar()
+{
     /*create an instance of the class*/
     Client client;
 
+    showModels();
     short modelChoice = chooseModel();
 
     /*ask cars needed*/
@@ -111,7 +133,8 @@ void buyCar() {
     scanf("%hd", &client.carsNeeded);
 
     /*check stock*/
-    if (carsStock[modelChoice] < client.carsNeeded) {
+    if (cars[modelChoice].carsAvailable < client.carsNeeded)
+    {
         printf("Sorry, there are fewer cars available than you require.\n");
         printf("\nPress any key to continue...\n");
         fflush(stdin);
@@ -119,7 +142,8 @@ void buyCar() {
         return;
     }
     /*Checks if input makes sense*/
-    if (client.carsNeeded == 0) {
+    if (client.carsNeeded == 0)
+    {
         printf("\n*Make sure you entered a correct number*\n");
         printf("\nPress any key to continue...\n");
         fflush(stdin);
@@ -127,7 +151,7 @@ void buyCar() {
         return;
     }
 
-    client.totalPrice = client.carsNeeded * carPrices[modelChoice];
+    client.totalPrice = client.carsNeeded * cars[modelChoice].carPrice;
 
     /*get customer name*/
     puts("What is your name? Name: ");
@@ -147,7 +171,8 @@ void buyCar() {
     applyDiscount(&client);
 
     /* Present discount outcome */
-    switch (client.giveDiscount) {
+    switch (client.giveDiscount)
+    {
     case true:
         // convert from 0.2 format to 20% format
         client.discountPercentage *= 100;
@@ -164,40 +189,45 @@ void buyCar() {
     printf("\nYou have bought %hd cars. Total price to pay is %.2f.",
            client.carsNeeded, client.totalPrice);
 
-    /*Write information about sale in the file*/
-    writePurchase(carModels[modelChoice], client.carsNeeded, client.totalPrice, client.discountValue, client.name, client.age);
-
     /*Update stock*/
-    // carsSold += client.carsNeeded;
-    /*
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        SOMEHOW STORE CARSSOLD OF THE MODEL
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    */
-    carsStock[modelChoice] -= client.carsNeeded;
+    cars[modelChoice].carsSold += client.carsNeeded;
+    cars[modelChoice].carsAvailable -= client.carsNeeded;
+    /*update information about how many cars were sold in the file*/
+    writeCarsSold();
+
+    /*Write information about sale in the file*/
+    writePurchase(cars[modelChoice].carModel, client.carsNeeded, client.totalPrice,
+                  client.discountValue, client.name, client.age);
 
     printf("\nPress any key to continue...\n");
     fflush(stdin);
     getchar();
 }
 
-short chooseModel(){
-    short carChoice;
+void showModels(){
     puts("\n***In our store there are a variety of cars presented!***");
     /*present all models in the shop*/
     printf("N.\tModel\t\t\tPrice\t\tAvailable\n\n");
-    for(int i = 0; i < sizeof(carModels) / sizeof(carModels[0]); i++){
-        printf("%-d.\t%-24s%-.2f\t%-hd\n", i+1, carModels[i], carPrices[i], carsStock[i]);
+    for (int i = 0; i < carOptions; i++)
+    {
+        printf("%-d.\t%-24s%-.2f\t%-hd\n", i + 1, cars[i].carModel, cars[i].carPrice, cars[i].carsAvailable);
     }
+}
+
+short chooseModel()
+{
+    short carChoice;
     fflush(stdin);
     printf("\nChoose car: ");
     scanf("%hd", &carChoice);
-    return carChoice-1;
+    return carChoice - 1;
 }
 
-void applyDiscount(Client *client){
-    //check if the customer is eligible for both discounts
-    if (tolower(client->isMember) == 'y' && (client->carsNeeded >= DISCOUNT_MULTIBUY_AMOUNT)) {
+void applyDiscount(Client *client)
+{
+    // check if the customer is eligible for both discounts
+    if (tolower(client->isMember) == 'y' && (client->carsNeeded >= DISCOUNT_MULTIBUY_AMOUNT))
+    {
         client->giveDiscount = 1;
         /*calculate discount value*/
         client->discountValue = client->totalPrice - (client->totalPrice * (1 - DISCOUNT_MAX));
@@ -207,7 +237,8 @@ void applyDiscount(Client *client){
     }
 
     // otherwise, check member discount
-    else if (tolower(client->isMember) == 'y') {
+    else if (tolower(client->isMember) == 'y')
+    {
         client->giveDiscount = 1;
         client->discountValue = client->totalPrice - (client->totalPrice * (1 - DISCOUNT_MEMBER_PERCENTAGE));
         client->totalPrice -= client->discountValue;
@@ -215,7 +246,8 @@ void applyDiscount(Client *client){
     }
 
     // otherwise, check multibuy discount
-    else if (client->carsNeeded >= DISCOUNT_MULTIBUY_AMOUNT) {
+    else if (client->carsNeeded >= DISCOUNT_MULTIBUY_AMOUNT)
+    {
         client->giveDiscount = 1;
         client->discountValue = client->totalPrice - (client->totalPrice * (1 - DISCOUNT_MULTIBUY_PERCENTAGE));
         client->totalPrice -= client->discountValue;
@@ -223,7 +255,8 @@ void applyDiscount(Client *client){
     }
 }
 
-void viewSales() {
+void viewSales()
+{
     system("cls");
     printf("*Sale information*\n\n");
     printf("Cars\tTotal Price\tDiscount Value\tName\nAge\n");
@@ -238,32 +271,61 @@ void viewSales() {
     return;
 }
 
-
-void writePurchase(char carModel[100], short carsNeeded, float totalPrice, float discountValue, char customerName[100], short customerAge) {
+void writePurchase(char carModel[100], short carsNeeded, float totalPrice, float discountValue, char customerName[100], short customerAge)
+{
     FILE *fpt;
-    if (access("salesData.csv", F_OK) != 0) {
+    if (access("salesData.csv", F_OK) != 0)
+    {
         fpt = fopen("salesData.csv", "w+");
-        fprintf(fpt, "CarModel,NumberOfCars,TotalPrice,DiscountValue,Name,Age\n");
+        // fprintf(fpt, "CarModel,NumberOfCars,TotalPrice,DiscountValue,Name,Age\n");
         fprintf(fpt, "%s,%hd,%.2f,%.2f,%s,%hd\n", carModel, carsNeeded, totalPrice, discountValue, customerName, customerAge);
-    } else {
+    }
+    else
+    {
         fpt = fopen("salesData.csv", "a+");
         fprintf(fpt, "%s,%hd,%.2f,%.2f,%s,%hd\n", carModel, carsNeeded, totalPrice, discountValue, customerName, customerAge);
     }
     fclose(fpt);
 }
 
-// void writeCarsData() {
-//     FILE *fpt;
-//     if(access("carsData.csv", F_OK) != 0){
-//         fpt = fopen("carsData.csv", "w+");
-//         fprintf();
-//     }
-// }
-
-void readFile() {
+void readPurchases()
+{
     FILE *fpt;
+    fpt = fopen("salesData.csv", "r");
+    fclose(fpt);
+}
 
-    fpt = fopen("", "r");
+void writeCarsSold()
+{
+    FILE *fpt;
+    fpt = fopen("carsSold.csv", "w");
+    for (int i = 0; i < carOptions; i++)
+    {
+        fprintf(fpt, "%hd,", cars[i].carsSold);
+    }
+    fclose(fpt);
+}
+
+void readCarsSold()
+{
+    FILE *fpt;
+    fpt = fopen("carsSold.csv", "r");
+    for (int i = 0; i < carOptions; i++)
+    {
+        /*get number from file and assign it to appropriate model*/
+        fscanf(fpt, "%hd", &cars[i].carsSold);
+        /*skip ',' to get next number*/
+        fscanf(fpt, ",");
+    }
+    fclose(fpt);
+}
+
+void updateCarsAvailable(){
+    for (int i = 0; i < carOptions; i++)
+    {
+        cars[i].carsAvailable -= cars[i].carsSold;
+    }
+    
 }
 
 // void bubbleSort() {
