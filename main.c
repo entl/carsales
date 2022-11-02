@@ -10,6 +10,8 @@
 #define DISCOUNT_MULTIBUY_AMOUNT 3
 #define DISCOUNT_MEMBER_PERCENTAGE 0.25f
 #define DISCOUNT_MAX 0.35f
+#define SALESDATAFILE "salesData.csv"
+#define CARSSOLDFILE "carsSold.csv"
 
 typedef struct
 {
@@ -36,6 +38,8 @@ typedef struct
 void menu();
 void buyCar();
 void viewSales();
+void viewSorted();
+void viewSalesPerModel(Client *, short numOfLines);
 void viewCarsStock();
 short chooseModel();
 
@@ -64,11 +68,11 @@ void writePurchase(char carModel[100], short carsNeeded, float totalPrice, float
  * 
  * @return short -> numberOfLines
  */
-short readNumberOfLines();
+short readNumberOfLines(char fileName[]);
 
 /**
  * @brief reads information about sales from file "salesData.csv". 
- *        Using fscanf function formats data and assigns its to according value in array of "Client" structs
+ *        Using "fscanf" function formats data and assigns its to according value in array of "Client" structs
  * 
  * @param numOfLines number of lines in the file
  * @param sales passing a pointer to the existing array of structs to manipulate with the data directly
@@ -100,7 +104,7 @@ void main()
 {
     /*gets from file number of cars that were sold*/
     readCarsSold();
-    /*update in each class variable "carsAvailable"*/
+    /*update in each struct "Car" variable "carsAvailable"*/
     updateCarsAvailable();
     while (true)
         menu();
@@ -145,7 +149,7 @@ void menu()
 
 void buyCar()
 {
-    /*create an instance of the class*/
+    /*create an instance of the struct*/
     Client client;
 
     viewCarsStock();
@@ -162,12 +166,13 @@ void buyCar()
         await();
     }
     /*Checks if input makes sense*/
-    if (client.carsNeeded == 0)
+    if (client.carsNeeded <= 0)
     {
         printf("\n*Make sure you entered a correct number*\n");
         await();
     }
 
+    /*update total price*/
     client.totalPrice = client.carsNeeded * cars[modelChoice].carPrice;
 
     /*get customer name*/
@@ -233,7 +238,7 @@ short chooseModel()
 {
     short carChoice;
     fflush(stdin);
-    printf("\nChoose car: ");
+    printf("\nChoose model: ");
     scanf("%hd", &carChoice);
     return carChoice - 1;
 }
@@ -274,20 +279,71 @@ void applyDiscount(Client *client)
 void viewSales()
 {
     // system("cls");
-    // printf("*Sale information*\n\n");
-    // printf("Cars\tTotal Price\tDiscount Value\tName\tAge\n");
-    short numOfLines = readNumberOfLines();
+    short numOfLines = readNumberOfLines(SALESDATAFILE);
+    short switchChoice;
     Client sales[numOfLines];
-    readPurchases(numOfLines, &sales);
-    /*
+    readPurchases(numOfLines, sales);
+    printf("\n1. Display total sales for each model\n"
+            "2. Display what each customer bought\n"
+            "3. Sort sales\n"
+            "Please choose one: ");
+    fflush(stdin);
+    scanf("%hd", &switchChoice);
+    // printf("*Sale information*\n\n");
+    // printf("Model\t\t    Quantity\tTotal Price\tDiscount\tCustomer Name\t\tAge\n");
+    // for (int i = 0; i < numOfLines; i++)
+    // {
+    //     printf("%-16s\t%hd\t%-.2f\t%-.2f\t%-20s\t%-hd\n", sales[i].carModel, sales[i].carsNeeded, sales[i].totalPrice, sales[i].discountValue, sales[i].name, sales[i].age);
+    // }
 
-        implement reading from file
-
-    */
-   for (int i = 0; i < numOfLines; i++)
+    switch (switchChoice)
     {
-        printf("%s,%hd,%f,%f,%s,%hd\n", sales[i].carModel, sales[i].carsNeeded, sales[i].totalPrice, sales[i].discountValue, sales[i].name, sales[i].age);
-        // printf("%s\n", sales[i].carModel);
+    case 1:
+        viewSalesPerModel(sales, numOfLines);
+        break;
+    case 2:
+        puts("2.");
+        break;
+    case 3:
+        viewSorted();
+        break;
+    default:
+        break;
+    }
+
+}
+
+void viewSorted(){
+    short switchChoice;
+    puts("\n1. Sort by car model\n"
+        "2. Sort by total price\n"
+        "3. Sort by quantity\n"
+        "Please choose one: ");
+    fflush(stdin);
+    scanf("%hd", &switchChoice);
+    switch (switchChoice)
+    {
+    case 1:
+        break;
+    case 2:
+        break;
+    case 3:
+        break;
+    default:
+        break;
+    }
+}
+
+void viewSalesPerModel(Client *sales, short numOfLines){
+    /*present all models in the shop*/
+    viewCarsStock();
+    short modelChoice = chooseModel();
+    printf("\nModel\t\t    Quantity\tTotal Price\tDiscount\tCustomer Name\t\tAge\n");
+    for (int i = 0; i < numOfLines; i++)
+    {
+        if(strcmp(sales[i].carModel, cars[modelChoice].carModel) == 0){
+            printf("%-16s\t%hd\t%-.2f\t%-.2f\t%-20s\t%-hd\n", sales[i].carModel, sales[i].carsNeeded, sales[i].totalPrice, sales[i].discountValue, sales[i].name, sales[i].age);
+        }
     }
 }
 
@@ -308,9 +364,9 @@ void writePurchase(char carModel[100], short carsNeeded, float totalPrice, float
     fclose(fpt);
 }
 
-short readNumberOfLines(){
+short readNumberOfLines(char fileName[]){
     FILE *fpt;
-    fpt = fopen("salesData.csv", "r");
+    fpt = fopen(fileName, "r");
     short numOfLines = 0;
     for (char c = getc(fpt); c != EOF; c = getc(fpt)) 
         if (c == '\n') // Increment count if this character is newline 
@@ -330,7 +386,6 @@ void readPurchases(short numOfLines, Client *sales)
         // fscanf(fpt, "%[^,]s", sales[i].carModel);
         i++;
     }
-    
 }
 
 void writeCarsSold()
