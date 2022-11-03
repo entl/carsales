@@ -2,4 +2,5 @@ test*
 old*
 *exe
 *csv
+temp*
 .vscode
