@@ -78,7 +78,12 @@ void viewSalesPerModel(Client *sales, short numOfLines);
  * @param numOfLines - number of lines in file "salesData" == number of values in array "sales"
  */
 void viewSalesPerCustomer(Client *sales, short numOfLines);
-void viewSalesSorted();
+void viewAllSales(Client *sales, short numOfLines);
+void viewSalesSorted(Client *sales, short numOfLines);
+void bubbleSortModel(Client *sales, short numOfLines);
+void bubbleSortTotalPrice(Client *sales, short numOfLines);
+void bubbleSortQuantity(Client *sales, short numOfLines);
+void viewSalesPerCustomer(Client *sales, short numOfLines);
 
 /**
  * @brief writes the information about purchase into the file "salesData.csv"
@@ -176,13 +181,13 @@ void menu()
         exit(0);
         break;
     default:
-        puts("*Make sure your choice is correct*");
+        puts("\n*Make sure your choice is correct*\n");
         break;
     }
 }
 
 void buyCar()
-{   
+{
     /*clears terminal*/
     system("cls");
     /*create an instance of the struct*/
@@ -199,20 +204,22 @@ void buyCar()
     while (true)
     {
         /*ask cars needed*/
-        printf(" - How many cars would you like to buy? Amount: ");
+        printf(" - How many cars would you like to buy?(0 to exit) Amount: ");
         scanf("%hd", &client.carsNeeded);
 
         /*Checks if input makes sense*/
-        if (client.carsNeeded <= 0)
+        if (client.carsNeeded < 0)
         {
             printf("\n*Make sure you entered a correct number*\n");
-            await();
+        }
+        else if (client.carsNeeded == 0)
+        {
+            return;
         }
         /*check stock*/
         else if (cars[modelChoice].carsAvailable < client.carsNeeded)
         {
-            printf(" - Sorry, there are fewer cars available than you require.\n");
-            await();
+            puts(" - Sorry, there are fewer cars available than you require.\n");
         }
         else
         {
@@ -248,13 +255,12 @@ void buyCar()
         scanf("%hd", &client.age);
         if (client.age < 18)
         {
-            puts("*Sorry, you are not old enough to buy a car*");
-            await();
+            puts("\n - Sorry, you are not old enough to buy a car");
             return;
         }
         else if (client.age > 120)
         {
-            puts("*Make sure your input is correct*");
+            puts("\n*Make sure your input is correct*\n");
         }
         else
         {
@@ -269,7 +275,7 @@ void buyCar()
         client.isMember = getchar();
         if (tolower(client.isMember) != 'y' && tolower(client.isMember) != 'n')
         {
-            puts("*Make sure your input is correct*");
+            puts("\n*Make sure your input is correct*\n");
         }
         else
         {
@@ -332,12 +338,20 @@ short chooseModel()
         fflush(stdin);
         printf("\n - Choose model(Enter 0 to exit): ");
         scanf("%hd", &carChoice);
-        if (carChoice < 0 || carChoice > 9)
+        puts(""); // for beatiful output
+        if (carChoice == 0)
         {
-            puts("*Make sure your choice is correct*");
+            break;
         }
-        else
+        else if (carChoice < 1 || carChoice > 9)
         {
+            puts("\n*Make sure your choice is correct*\n");
+        }
+        else if (cars[carChoice - 1].carsAvailable <= 0)
+        {
+            puts(" - Sorry, this model is out of stock");
+        }
+        else{
             break;
         }
     }
@@ -409,16 +423,13 @@ void viewCarsStock()
         return;
         break;
     default:
-        puts("*Make sure your choice is correct*");
+        puts("\n*Make sure your choice is correct*\n");
         break;
     }
 }
 
 Car *sortCarsStock(Car *cars, short numberOfCars)
 {
-    /*
-    create temp array of cars stock to keep the order of initial array
-    */
     Car *carsTemp = malloc(sizeof(Car) * numberOfCars);
     for (int i = 0; i < numberOfCars; i++)
     {
@@ -452,8 +463,9 @@ void viewSales()
     readPurchases(numOfLines, sales); // passing sales by reference
     printf("\n1. Display total sales for each model\n"
            "2. Display what each customer bought\n"
-           "3. Sort sales\n"
-           "4. Exit\n"
+           "3. View all sales\n"
+           "4. Sort sales\n"
+           "5. Exit\n"
            " - Please choose one: ");
     fflush(stdin);
     scanf("%hd", &switchChoice);
@@ -467,22 +479,33 @@ void viewSales()
         viewSalesPerCustomer(sales, numOfLines);
         break;
     case 3:
-        viewSalesSorted();
+        viewAllSales(sales, numOfLines);
         break;
     case 4:
+        viewSalesSorted(sales, numOfLines);
+        break;
+    case 5:
         return;
         break;
     default:
-        puts("*Make sure your choice is correct*");
+        puts("\n*Make sure your choice is correct*\n");
         break;
     }
 }
 
-/*
-    !!!!!!!!!!!!!!!!!!!!
-*/
-void viewSalesSorted()
+void viewAllSales(Client *sales, short numOfLines)
 {
+    printf("\nModel\t\t    Quantity\tTotal Price\tDiscount\tCustomer Name\t\tAge\n");
+    for (int i = 0; i < numOfLines; i++)
+    {
+        printf("%-16s\t%-hd\t%-8.2f\t%-8.2f\t%-20s\t%-hd\n", sales[i].carModel, sales[i].carsNeeded, sales[i].totalPrice, sales[i].discountValue, sales[i].name, sales[i].age);
+    }
+}
+
+void viewSalesSorted(Client *sales, short numOfLines)
+{
+    system("cls");
+
     short switchChoice;
     printf("\n1. Sort by car model\n"
            "2. Sort by total price\n"
@@ -494,21 +517,76 @@ void viewSalesSorted()
     switch (switchChoice)
     {
     case 1:
+        puts("Model sort");
+        bubbleSortModel(sales, numOfLines);
+        viewAllSales(sales, numOfLines);
         break;
     case 2:
+        bubbleSortTotalPrice(sales, numOfLines);
+        viewAllSales(sales, numOfLines);
         break;
     case 3:
+        bubbleSortQuantity(sales, numOfLines);
+        viewAllSales(sales, numOfLines);
         break;
     case 4:
         break;
     default:
-        puts("*Make sure your choice is correct*");
+        puts("\n*Make sure your choice is correct*\n");
         break;
     }
 }
 
+void bubbleSortTotalPrice(Client *sales, short numOfLines)
+{
+    for (int i = 0; i < numOfLines; i++)
+    {
+        for (int j = 0; j < numOfLines - i - 1; j++)
+        {
+            if (sales[j].totalPrice < sales[j + 1].totalPrice)
+            {
+                Client temp = sales[j + 1];
+                sales[j + 1] = sales[j];
+                sales[j] = temp;
+            }
+        }
+    }
+}
+
+void bubbleSortQuantity(Client *sales, short numOfLines)
+{
+    for (int i = 0; i < numOfLines; i++)
+    {
+        for (int j = 0; j < numOfLines - i - 1; j++)
+        {
+            if (sales[j].carsNeeded < sales[j + 1].carsNeeded)
+            {
+                Client temp = sales[j + 1];
+                sales[j + 1] = sales[j];
+                sales[j] = temp;
+            }
+        }
+    }
+}
+
+void bubbleSortModel(Client *sales, short numOfLines)
+{
+    for (int i = 0; i < numOfLines; i++)
+    {
+        for (int j = 0; j < numOfLines - i - 1; j++)
+        {
+            if (strcmp(sales[j].carModel, sales[j + 1].carModel) > 0)
+            {
+                Client temp = sales[j + 1];
+                sales[j + 1] = sales[j];
+                sales[j] = temp;
+            }
+        }
+    }
+}
+
 void viewSalesPerModel(Client *sales, short numOfLines)
-{   
+{
     /*present all models in the shop*/
     viewCarModels(cars, carOptions);
     short modelChoice = chooseModel();
@@ -585,6 +663,7 @@ void readPurchases(short numOfLines, Client *sales)
         fscanf(fpt, "%28[^,],%hd,%f,%f,%100[^,],%hd\n", sales[i].carModel, &sales[i].carsNeeded, &sales[i].totalPrice, &sales[i].discountValue, &sales[i].name, &sales[i].age);
         i++;
     }
+    fclose(fpt);
 }
 
 void writeCarsSold()
