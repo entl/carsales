@@ -1,0 +1,7 @@
+/* Constants */
+#define DISCOUNT_MULTIBUY_PERCENTAGE 0.20f
+#define DISCOUNT_MULTIBUY_AMOUNT 3
+#define DISCOUNT_MEMBER_PERCENTAGE 0.25f
+#define DISCOUNT_MAX 0.35f
+#define SALESDATAFILE "salesData.csv"
+#define CARSSOLDFILE "carsSold.csv"

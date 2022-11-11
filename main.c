@@ -7,139 +7,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "structs.h"
+#include "globalVariables.h"
+#include "prototypes.h"
 
-/* Constants */
-#define DISCOUNT_MULTIBUY_PERCENTAGE 0.20f
-#define DISCOUNT_MULTIBUY_AMOUNT 3
-#define DISCOUNT_MEMBER_PERCENTAGE 0.25f
-#define DISCOUNT_MAX 0.35f
-#define SALESDATAFILE "salesData.csv"
-#define CARSSOLDFILE "carsSold.csv"
-
-typedef struct
-{
-    char name[100];
-    char carModel[100];
-    unsigned short age;
-    short carsNeeded;
-    float totalPrice;
-    float discountPercentage;
-    float discountValue;
-    bool giveDiscount;
-    char isMember;
-} Client;
-
-typedef struct
-{
-    char carModel[100];
-    float carPrice;
-    unsigned short carsAvailable;
-    unsigned short carsSold;
-} Car;
-
-/*funtions prototypes*/
-void menu();
-
-void buyCar();
-
-/**
- * @brief outputs table of models/price/quantity based on a given array
- *
- * @param cars array of structs "Car"
- * @param carOptions number of values in the array
- */
-void viewCarModels(Car *cars, short carOptions);
-short chooseModel();
-
-/**
- * @brief Based on cars needed and membership applies a discount
- *
- * @param client (pointer to struct)
- */
-void applyDiscount(Client *client);
-
-void viewCarsStock();
-Car *sortCarsStock(Car *cars, short numberOfCars);
-
-void viewSales();
-
-/**
- * @brief outputs all sales of selected model
- *
- * @param sales - pointer to the array of Client structs - "sales"
- * @param numOfLines - number of lines in file "salesData" == number of values in array "sales"
- */
-void viewSalesPerModel(Client *sales, short numOfLines);
-
-/**
- * @brief outputs all sales of a customer based on an input name
- *
- * @param sales - pointer to the array of Client structs - "sales"
- * @param numOfLines - number of lines in file "salesData" == number of values in array "sales"
- */
-void viewSalesPerCustomer(Client *sales, short numOfLines);
-void viewAllSales(Client *sales, short numOfLines);
-void viewSalesSorted(Client *sales, short numOfLines);
-void bubbleSortModel(Client *sales, short numOfLines);
-void bubbleSortTotalPrice(Client *sales, short numOfLines);
-void bubbleSortQuantity(Client *sales, short numOfLines);
-void viewSalesPerCustomer(Client *sales, short numOfLines);
-
-/**
- * @brief writes the information about purchase into the file "salesData.csv"
-    if it is first run of code, creates file "salesData.cvs"
- *
- * @param carModel
- * @param carsNeeded
- * @param totalPrice
- * @param discountValue
- * @param customerName
- * @param customerAge
- */
-void writePurchase(char carModel[100], short carsNeeded, float totalPrice, float discountValue, char customerName[100], short customerAge);
-
-/**
- * @brief reads number of lines in file "salesData.csv"
- *
- * @param fileName
- * @return short -> numberOfLines
- */
-short readNumberOfLines(char fileName[]);
-
-/**
- * @brief reads information about sales from file "salesData.csv".
- *        Using "fscanf" function formats data and assigns its to according value in array of "Client" structs
- *
- * @param numOfLines number of lines in the file
- * @param sales passing a pointer to the existing array of structs to manipulate with the data directly
- */
-void readPurchases(short numOfLines, Client *sales);
-void writeCarsSold();
-void readCarsSold();
-void updateCarsAvailable();
-void await();
-
-/*
- * Car models
- * create an array of structs
- */
-Car cars[9] = {
-    {"Toyota Corolla", 25000.0f, 20, 0},
-    {"Toyota RAV4", 30000.0f, 15, 0},
-    {"Honda CR-V", 32500.0f, 16, 0},
-    {"Ford F-150", 37800.0f, 13, 0},
-    {"Honda Civic", 24000.0f, 19, 0},
-    {"Mercedes C Class", 39000.0f, 10, 0},
-    {"Aston Martin Vantage", 63777.0f, 7, 0},
-    {"Ferrari SF90", 110000.0f, 4, 0},
-    {"Nissan GTR", 100000.0f, 5, 0},
-};
-short carOptions = sizeof(cars) / sizeof(cars[0]);
 
 void main()
 {
     /*gets from file number of cars that were sold*/
-    readCarsSold();
+    readCarsSoldFromFile();
     /*update in each struct "Car" variable "carsAvailable"*/
     updateCarsAvailable();
     while (true)
@@ -312,10 +188,10 @@ void buyCar()
     cars[modelChoice].carsSold += client.carsNeeded;
     cars[modelChoice].carsAvailable -= client.carsNeeded;
     /*update information about how many cars were sold in the file*/
-    writeCarsSold();
+    writeCarsSoldToFile();
 
     /*Write information about sale in the file*/
-    writePurchase(cars[modelChoice].carModel, client.carsNeeded, client.totalPrice,
+    writePurchaseToFile(cars[modelChoice].carModel, client.carsNeeded, client.totalPrice,
                   client.discountValue, client.name, client.age);
 }
 
@@ -323,7 +199,7 @@ void viewCarModels(Car *car, short carOptions)
 {
     puts("\n***In our store there are a variety of cars presented!***");
     /*present all models in the shop*/
-    printf("N.\tModel\t\t\tPrice\t\tAvailable\n\n");
+    printf("%-8s%-24s%-16s%-s\n\n","N.","Model","Price","Available");
     for (int i = 0; i < carOptions; i++)
     {
         printf("%-d.\t%-24s%-.2f\t%-hd\n", i + 1, car[i].carModel, car[i].carPrice, car[i].carsAvailable);
@@ -415,8 +291,9 @@ void viewCarsStock()
         system("cls");
 
         /*Create a new array with car models, but sorted in order to not to change the main array*/
-        Car *carsSorted = sortCarsStock(cars, carOptions);
+        Car *carsSorted = sortCarsStockByAvailableCars(cars, carOptions);
         viewCarModels(carsSorted, carOptions);
+        /*free allocated memory*/
         free(carsSorted);
         break;
     case 3:
@@ -428,20 +305,31 @@ void viewCarsStock()
     }
 }
 
-Car *sortCarsStock(Car *cars, short numberOfCars)
-{
+Car *sortCarsStockByAvailableCars(Car *cars, short numberOfCars)
+{   
+    /*
+    allocating memory for the array to make it possible 
+    to access it with the pointer
+    carsTemp is needed to keep the original array without changes
+    */
     Car *carsTemp = malloc(sizeof(Car) * numberOfCars);
+    /*assigning values from initial array to temp*/
     for (int i = 0; i < numberOfCars; i++)
     {
         carsTemp[i] = cars[i];
     }
 
+    /*  
+        explanation of "numberOfCars - i - 1"
+        https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
+    */
     for (int i = 0; i < numberOfCars; i++)
     {
         for (int j = 0; j < numberOfCars - i - 1; j++)
         {
             if (carsTemp[j].carsAvailable < carsTemp[j + 1].carsAvailable)
             {
+                /*swapping structures inside the array*/
                 Car temp = carsTemp[j + 1];
                 carsTemp[j + 1] = carsTemp[j];
                 carsTemp[j] = temp;
@@ -457,10 +345,10 @@ void viewSales()
     /*clears terminal*/
     system("cls");
 
-    short numOfLines = readNumberOfLines(SALESDATAFILE);
+    short numOfLines = readNumberOfLinesFromFile(SALESDATAFILE);
     short switchChoice;
     Client sales[numOfLines];
-    readPurchases(numOfLines, sales); // passing sales by reference
+    readPurchasesFromFile(numOfLines, sales); // passing sales by reference
     printf("\n1. Display total sales for each model\n"
            "2. Display what each customer bought\n"
            "3. View all sales\n"
@@ -495,7 +383,8 @@ void viewSales()
 
 void viewAllSales(Client *sales, short numOfLines)
 {
-    printf("\nModel\t\t    Quantity\tTotal Price\tDiscount\tCustomer Name\t\tAge\n");
+    printf("\n%-20s%-12s%-16s%-16s%-24s%-s\n","Model","Quantity","Total Price","Discount","Customer Name", "Age");
+    // printf("\nModel\t\t    Quantity\tTotal Price\tDiscount\tCustomer Name\t\tAge\n");
     for (int i = 0; i < numOfLines; i++)
     {
         printf("%-16s\t%-hd\t%-8.2f\t%-8.2f\t%-20s\t%-hd\n", sales[i].carModel, sales[i].carsNeeded, sales[i].totalPrice, sales[i].discountValue, sales[i].name, sales[i].age);
@@ -518,15 +407,15 @@ void viewSalesSorted(Client *sales, short numOfLines)
     {
     case 1:
         puts("Model sort");
-        bubbleSortModel(sales, numOfLines);
+        bubbleSortSaleByCarModel(sales, numOfLines);
         viewAllSales(sales, numOfLines);
         break;
     case 2:
-        bubbleSortTotalPrice(sales, numOfLines);
+        bubbleSortBySaleTotalPrice(sales, numOfLines);
         viewAllSales(sales, numOfLines);
         break;
     case 3:
-        bubbleSortQuantity(sales, numOfLines);
+        bubbleSortSaleByQuantityPurchased(sales, numOfLines);
         viewAllSales(sales, numOfLines);
         break;
     case 4:
@@ -537,14 +426,19 @@ void viewSalesSorted(Client *sales, short numOfLines)
     }
 }
 
-void bubbleSortTotalPrice(Client *sales, short numOfLines)
+void bubbleSortBySaleTotalPrice(Client *sales, short numOfLines)
 {
     for (int i = 0; i < numOfLines; i++)
     {
+        /*  
+            explanation of "numberOfCars - i - 1"
+            https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
+        */
         for (int j = 0; j < numOfLines - i - 1; j++)
         {
             if (sales[j].totalPrice < sales[j + 1].totalPrice)
             {
+                /*swap whole structure inside the array*/
                 Client temp = sales[j + 1];
                 sales[j + 1] = sales[j];
                 sales[j] = temp;
@@ -553,14 +447,19 @@ void bubbleSortTotalPrice(Client *sales, short numOfLines)
     }
 }
 
-void bubbleSortQuantity(Client *sales, short numOfLines)
+void bubbleSortSaleByQuantityPurchased(Client *sales, short numOfLines)
 {
     for (int i = 0; i < numOfLines; i++)
     {
+        /*  
+            explanation of "numberOfCars - i - 1"
+            https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
+        */
         for (int j = 0; j < numOfLines - i - 1; j++)
         {
             if (sales[j].carsNeeded < sales[j + 1].carsNeeded)
             {
+                /*swap whole structure inside the array*/
                 Client temp = sales[j + 1];
                 sales[j + 1] = sales[j];
                 sales[j] = temp;
@@ -569,14 +468,19 @@ void bubbleSortQuantity(Client *sales, short numOfLines)
     }
 }
 
-void bubbleSortModel(Client *sales, short numOfLines)
+void bubbleSortSaleByCarModel(Client *sales, short numOfLines)
 {
     for (int i = 0; i < numOfLines; i++)
     {
+        /*  
+            explanation of "numberOfCars - i - 1"
+            https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
+        */
         for (int j = 0; j < numOfLines - i - 1; j++)
         {
             if (strcmp(sales[j].carModel, sales[j + 1].carModel) > 0)
             {
+                /*swap whole structure inside the array*/
                 Client temp = sales[j + 1];
                 sales[j + 1] = sales[j];
                 sales[j] = temp;
@@ -594,10 +498,10 @@ void viewSalesPerModel(Client *sales, short numOfLines)
     {
         return;
     }
-    /*Table names*/
-    printf("\nModel\t\t    Quantity\tTotal Price\tDiscount\tCustomer Name\t\tAge\n");
+    printf("\n%-20s%-12s%-16s%-16s%-24s%-s\n","Model","Quantity","Total Price","Discount","Customer Name", "Age");
     for (int i = 0; i < numOfLines; i++)
     {
+        /*compare model choice with presented models*/
         if (strcmp(sales[i].carModel, cars[modelChoice].carModel) == 0)
         {
             printf("%-16s\t%-hd\t%-8.2f\t%-8.2f\t%-20s\t%-hd\n", sales[i].carModel, sales[i].carsNeeded, sales[i].totalPrice, sales[i].discountValue, sales[i].name, sales[i].age);
@@ -611,7 +515,7 @@ void viewSalesPerCustomer(Client *sales, short numOfLines)
     printf("\n - Enter a name which you used for purchase: ");
     fflush(stdin); // clears buffer
     scanf("%[^\n]s", &nameToSearch);
-    printf("\nModel\t\t    Quantity\tTotal Price\tDiscount\tCustomer Name\t\tAge\n");
+    printf("\n%-20s%-12s%-16s%-16s%-24s%-s\n","Model","Quantity","Total Price","Discount","Customer Name", "Age");
     for (int i = 0; i < numOfLines; i++)
     {
         if (strcmp(sales[i].name, nameToSearch) == 0)
@@ -621,7 +525,7 @@ void viewSalesPerCustomer(Client *sales, short numOfLines)
     }
 }
 
-void writePurchase(char carModel[100], short carsNeeded, float totalPrice, float discountValue, char customerName[100], short customerAge)
+void writePurchaseToFile(char carModel[100], short carsNeeded, float totalPrice, float discountValue, char customerName[100], short customerAge)
 {
     FILE *fpt;
     /*Check if file exists*/
@@ -640,7 +544,7 @@ void writePurchase(char carModel[100], short carsNeeded, float totalPrice, float
     fclose(fpt);
 }
 
-short readNumberOfLines(char fileName[])
+short readNumberOfLinesFromFile(char fileName[])
 {
     FILE *fpt;
     fpt = fopen(fileName, "r");
@@ -653,7 +557,7 @@ short readNumberOfLines(char fileName[])
     return numOfLines;
 }
 
-void readPurchases(short numOfLines, Client *sales)
+void readPurchasesFromFile(short numOfLines, Client *sales)
 {
     FILE *fpt;
     fpt = fopen(SALESDATAFILE, "r");
@@ -666,7 +570,7 @@ void readPurchases(short numOfLines, Client *sales)
     fclose(fpt);
 }
 
-void writeCarsSold()
+void writeCarsSoldToFile()
 {
     FILE *fpt;
     fpt = fopen(CARSSOLDFILE, "w");
@@ -677,7 +581,7 @@ void writeCarsSold()
     fclose(fpt);
 }
 
-void readCarsSold()
+void readCarsSoldFromFile()
 {
     FILE *fpt;
     fpt = fopen(CARSSOLDFILE, "r");
