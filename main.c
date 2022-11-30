@@ -129,25 +129,26 @@ void buyCar()
     /*validating age*/
     while (true)
     {
+        client.age = -1; //set base value to validate if string was entered
         printf("\n - How old are you? Age: ");
         fflush(stdin);
         scanf("%hd", &client.age);
-        if (client.age < 18)
+        if (client.age > 120 || client.age == -1)
+        {
+            puts("\n*Make sure your input is correct*\n");
+        }
+        else if (client.age < 18)
         {
             puts("\n - Sorry, you are not old enough to buy a car");
             return;
-        }
-        else if (client.age > 120)
-        {
-            puts("\n*Make sure your input is correct*\n");
         }
         else
         {
             break;
         }
     }
-
-    /*validate Car Clun membership*/
+    /*validate Car Clun membe
+    rship*/
     while (true)
     {
         printf("\n - Are you a member of the Car Club?(y/n): ");
