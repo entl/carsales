@@ -77,6 +77,7 @@ void buyCar()
         return;
     }
 
+    /*validate cars needed*/
     while (true)
     {
         /*ask cars needed*/
@@ -106,6 +107,7 @@ void buyCar()
     /*update total price*/
     client.totalPrice = client.carsNeeded * cars[modelChoice].carPrice;
 
+    /*validate customer name*/
     while (true)
     {
         char isCorrect;
@@ -124,6 +126,7 @@ void buyCar()
         }
     }
 
+    /*validating age*/
     while (true)
     {
         printf("\n - How old are you? Age: ");
@@ -144,6 +147,7 @@ void buyCar()
         }
     }
 
+    /*validate Car Clun membership*/
     while (true)
     {
         printf("\n - Are you a member of the Car Club?(y/n): ");
@@ -322,6 +326,19 @@ Car *sortCarsStockByAvailableCars(Car *cars, short numberOfCars)
     /*  
         explanation of "numberOfCars - i - 1"
         https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
+        work principle:
+        
+        [3, 2, 1]   i = 0, j = 0, j < 3-i-1 = 3-0-1 = 2
+        3 > 2       
+        [2, 3, 1]   i = 0, j = 1, j < 2
+        3 > 1
+        [2, 1, 3]   i = 0, j = 2, j < 2 (end of loop)
+        Now "3" is in its place, so we no longer need to compare it.
+        This was predefined in "j < length - i - 1" condition, so now we break out this loop to outer one.
+        
+        [2, 1, 3]   i = 1, j = 0, j < 3-i-1 = 3-1-1 = 1
+        2 > 1
+        [1, 2, 3]   i = 1, j = 1, j < 1 (end of loop)
     */
     for (int i = 0; i < numberOfCars; i++)
     {
@@ -384,7 +401,6 @@ void viewSales()
 void viewAllSales(Client *sales, short numOfLines)
 {
     printf("\n%-20s%-12s%-16s%-16s%-24s%-s\n","Model","Quantity","Total Price","Discount","Customer Name", "Age");
-    // printf("\nModel\t\t    Quantity\tTotal Price\tDiscount\tCustomer Name\t\tAge\n");
     for (int i = 0; i < numOfLines; i++)
     {
         printf("%-16s\t%-hd\t%-8.2f\t%-8.2f\t%-20s\t%-hd\n", sales[i].carModel, sales[i].carsNeeded, sales[i].totalPrice, sales[i].discountValue, sales[i].name, sales[i].age);
@@ -430,12 +446,25 @@ void bubbleSortBySaleTotalPrice(Client *sales, short numOfLines)
 {
     for (int i = 0; i < numOfLines; i++)
     {
-        /*  
-            explanation of "numberOfCars - i - 1"
-            https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
-        */
         for (int j = 0; j < numOfLines - i - 1; j++)
         {
+            /*  
+                explanation of "numberOfCars - i - 1"
+                https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
+                work principle:
+                
+                [3, 2, 1]   i = 0, j = 0, j < 3-i-1 = 3-0-1 = 2
+                3 > 2       
+                [2, 3, 1]   i = 0, j = 1, j < 2
+                3 > 1
+                [2, 1, 3]   i = 0, j = 2, j < 2 (end of loop)
+                Now "3" is in its place, so we no longer need to compare it.
+                This was predefined in "j < length - i - 1" condition, so now we break out this loop to outer one.
+                
+                [2, 1, 3]   i = 1, j = 0, j < 3-i-1 = 3-1-1 = 1
+                2 > 1
+                [1, 2, 3]   i = 1, j = 1, j < 1 (end of loop)
+            */
             if (sales[j].totalPrice < sales[j + 1].totalPrice)
             {
                 /*swap whole structure inside the array*/
@@ -451,12 +480,25 @@ void bubbleSortSaleByQuantityPurchased(Client *sales, short numOfLines)
 {
     for (int i = 0; i < numOfLines; i++)
     {
-        /*  
-            explanation of "numberOfCars - i - 1"
-            https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
-        */
         for (int j = 0; j < numOfLines - i - 1; j++)
         {
+            /*  
+                explanation of "numberOfCars - i - 1"
+                https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
+                work principle:
+                
+                [3, 2, 1]   i = 0, j = 0, j < 3-i-1 = 3-0-1 = 2
+                3 > 2       
+                [2, 3, 1]   i = 0, j = 1, j < 2
+                3 > 1
+                [2, 1, 3]   i = 0, j = 2, j < 2 (end of loop)
+                Now "3" is in its place, so we no longer need to compare it.
+                This was predefined in "j < length - i - 1" condition, so now we break out this loop to outer one.
+                
+                [2, 1, 3]   i = 1, j = 0, j < 3-i-1 = 3-1-1 = 1
+                2 > 1
+                [1, 2, 3]   i = 1, j = 1, j < 1 (end of loop)
+            */
             if (sales[j].carsNeeded < sales[j + 1].carsNeeded)
             {
                 /*swap whole structure inside the array*/
@@ -472,12 +514,25 @@ void bubbleSortSaleByCarModel(Client *sales, short numOfLines)
 {
     for (int i = 0; i < numOfLines; i++)
     {
-        /*  
-            explanation of "numberOfCars - i - 1"
-            https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
-        */
         for (int j = 0; j < numOfLines - i - 1; j++)
         {
+            /*  
+                explanation of "numberOfCars - i - 1"
+                https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
+                work principle:
+                
+                [3, 2, 1]   i = 0, j = 0, j < 3-i-1 = 3-0-1 = 2
+                3 > 2       
+                [2, 3, 1]   i = 0, j = 1, j < 2
+                3 > 1
+                [2, 1, 3]   i = 0, j = 2, j < 2 (end of loop)
+                Now "3" is in its place, so we no longer need to compare it.
+                This was predefined in "j < length - i - 1" condition, so now we break out this loop to outer one.
+                
+                [2, 1, 3]   i = 1, j = 0, j < 3-i-1 = 3-1-1 = 1
+                2 > 1
+                [1, 2, 3]   i = 1, j = 1, j < 1 (end of loop)
+            */
             if (strcmp(sales[j].carModel, sales[j + 1].carModel) > 0)
             {
                 /*swap whole structure inside the array*/
