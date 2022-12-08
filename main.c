@@ -1,6 +1,3 @@
-// written by Vorobyov Maksym
-// Saturday November 02 2022
-
 #define _CRT_SECURE_NO_WARNINGS
 #include <ctype.h>
 #include <stdbool.h>
@@ -15,7 +12,7 @@
 void main()
 {
     /*gets from file number of cars that were sold*/
-    readCarsSoldFromFile();
+    getCarsSoldFromFile();
     /*update in each struct "Car" variable "carsAvailable"*/
     updateCarsAvailable();
     while (true)
@@ -42,32 +39,29 @@ void menu()
     {
     case 'a':
         buyCar();
-        await();
         break;
     case 'b':
         viewSales();
-        await();
         break;
     case 'c':
         viewCarsStock();
-        await();
         break;
     case 'x':
         puts("\n*Thanks for using our service*");
+        await();
         exit(0);
         break;
     default:
         puts("\n*Make sure your choice is correct*\n");
         break;
     }
+    await();
 }
 
 void buyCar()
 {
     /*clears terminal*/
     system("cls");
-    /*create an instance of the struct*/
-    Client client;
 
     viewCarModels(cars, carOptions);
     short modelChoice = chooseModel();
@@ -76,12 +70,18 @@ void buyCar()
     {
         return;
     }
+    
+    /*create an instance of the struct*/
+    Client client;
 
     /*validate cars needed*/
     while (true)
     {
+        client.carsNeeded = -1; //set base value to validate if string was entered
+
         /*ask cars needed*/
         printf(" - How many cars would you like to buy?(0 to exit) Amount: ");
+        fflush(stdin);
         scanf("%hd", &client.carsNeeded);
 
         /*Checks if input makes sense*/
@@ -112,10 +112,16 @@ void buyCar()
     {
         char isCorrect;
         /*get customer name*/
-        printf("\n - What is your name? Name: ");
+        printf("\n - What is your first name? Name: ");
         fflush(stdin);
         /*use %[^\n]s to capture whole name (more than 1 word)*/
         scanf("%[^\n]s", &client.name);
+        /*Check whether name contains ',' to prevent database from crashing*/
+        if (strchr(client.name, ',') != NULL)
+        {
+            puts(" - Please enter name without ','");
+            continue;
+        }
         printf(" - Your name is: %s\n", client.name);
         printf(" - Is your name correct?(y/n): ");
         fflush(stdin);
@@ -147,8 +153,7 @@ void buyCar()
             break;
         }
     }
-    /*validate Car Clun membe
-    rship*/
+    /*validate Car Clun membership*/
     while (true)
     {
         printf("\n - Are you a member of the Car Club?(y/n): ");
@@ -363,7 +368,7 @@ void viewSales()
     /*clears terminal*/
     system("cls");
 
-    short numOfLines = readNumberOfLinesFromFile(SALESDATAFILE);
+    short numOfLines = getNumberOfLinesFromFile(SALESDATAFILE);
     short switchChoice;
     Client sales[numOfLines];
     readPurchasesFromFile(numOfLines, sales); // passing sales by reference
@@ -484,21 +489,7 @@ void bubbleSortSaleByQuantityPurchased(Client *sales, short numOfLines)
         for (int j = 0; j < numOfLines - i - 1; j++)
         {
             /*  
-                explanation of "numberOfCars - i - 1"
-                https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
-                work principle:
-                
-                [3, 2, 1]   i = 0, j = 0, j < 3-i-1 = 3-0-1 = 2
-                3 > 2       
-                [2, 3, 1]   i = 0, j = 1, j < 2
-                3 > 1
-                [2, 1, 3]   i = 0, j = 2, j < 2 (end of loop)
-                Now "3" is in its place, so we no longer need to compare it.
-                This was predefined in "j < length - i - 1" condition, so now we break out this loop to outer one.
-                
-                [2, 1, 3]   i = 1, j = 0, j < 3-i-1 = 3-1-1 = 1
-                2 > 1
-                [1, 2, 3]   i = 1, j = 1, j < 1 (end of loop)
+                explanation of bubble sort in function 'bubbleSortBySaleTotalPrice'
             */
             if (sales[j].carsNeeded < sales[j + 1].carsNeeded)
             {
@@ -518,21 +509,7 @@ void bubbleSortSaleByCarModel(Client *sales, short numOfLines)
         for (int j = 0; j < numOfLines - i - 1; j++)
         {
             /*  
-                explanation of "numberOfCars - i - 1"
-                https://www.youtube.com/watch?v=YqzNgaFQEh8&list=LL&index=4
-                work principle:
-                
-                [3, 2, 1]   i = 0, j = 0, j < 3-i-1 = 3-0-1 = 2
-                3 > 2       
-                [2, 3, 1]   i = 0, j = 1, j < 2
-                3 > 1
-                [2, 1, 3]   i = 0, j = 2, j < 2 (end of loop)
-                Now "3" is in its place, so we no longer need to compare it.
-                This was predefined in "j < length - i - 1" condition, so now we break out this loop to outer one.
-                
-                [2, 1, 3]   i = 1, j = 0, j < 3-i-1 = 3-1-1 = 1
-                2 > 1
-                [1, 2, 3]   i = 1, j = 1, j < 1 (end of loop)
+                explanation of bubble sort in function 'bubbleSortBySaleTotalPrice'
             */
             if (strcmp(sales[j].carModel, sales[j + 1].carModel) > 0)
             {
@@ -600,7 +577,7 @@ void writePurchaseToFile(char carModel[100], short carsNeeded, float totalPrice,
     fclose(fpt);
 }
 
-short readNumberOfLinesFromFile(char fileName[])
+short getNumberOfLinesFromFile(char fileName[])
 {
     FILE *fpt;
     fpt = fopen(fileName, "r");
@@ -637,16 +614,14 @@ void writeCarsSoldToFile()
     fclose(fpt);
 }
 
-void readCarsSoldFromFile()
+void getCarsSoldFromFile()
 {
     FILE *fpt;
     fpt = fopen(CARSSOLDFILE, "r");
     for (int i = 0; i < carOptions; i++)
     {
         /*get number from file and assign it to appropriate model*/
-        fscanf(fpt, "%hd", &cars[i].carsSold);
-        /*skip ',' to get next number*/
-        fscanf(fpt, ",");
+        fscanf(fpt, "%hd,", &cars[i].carsSold);
     }
     fclose(fpt);
 }

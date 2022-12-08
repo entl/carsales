@@ -72,7 +72,7 @@ void writePurchaseToFile(char carModel[100], short carsNeeded, float totalPrice,
  * @param fileName
  * @return short -> numberOfLines
  */
-short readNumberOfLinesFromFile(char fileName[]);
+short getNumberOfLinesFromFile(char fileName[]);
 
 /**
  * @brief reads information about sales from file "salesData.csv".
@@ -83,6 +83,6 @@ short readNumberOfLinesFromFile(char fileName[]);
  */
 void readPurchasesFromFile(short numOfLines, Client *sales);
 void writeCarsSoldToFile();
-void readCarsSoldFromFile();
+void getCarsSoldFromFile();
 void updateCarsAvailable();
 void await();
